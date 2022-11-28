@@ -23,7 +23,6 @@ def get_description(data: pd.DataFrame):
     for idx, col_name in enumerate(data.columns[1:]):
         value = np.array(data[col_name])
         quartile = Statistician().quartile(value)
-        print(quartile)
         res[idx] = [
             Statistician().count(value),
             Statistician().mean(value),
@@ -41,7 +40,7 @@ def describe(data: pd.DataFrame):
     data = data.dropna()
     data = get_description(data)
     df = pd.DataFrame(data, index=["Count", "Mean", "Std", "Min", "25%", "50%", "75%", "Max", "Var"])
-    print(df[4:])
+    print(df.iloc[:, 5:])
 
 def main(argv):
     try:
@@ -52,7 +51,6 @@ def main(argv):
     for opt, arg in opts:
         if opt in ["-f", "--file"]:
             describe(load_data(arg))
-
 
 if __name__ == "__main__":
     main(sys.argv[1:])
