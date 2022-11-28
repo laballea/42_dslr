@@ -37,7 +37,14 @@ def display(file, features):
             print(f"Error, feature {features}, not in the list : ")
             print(used_features)
     else:
-        scatter_matrix(data.iloc[:,6:], alpha = 1, figsize = (len(used_features), len(used_features)), diagonal = 'hist',)
+        axes = scatter_matrix(data, alpha = 1, s=5, figsize = (len(used_features), len(used_features)), diagonal = 'hist',)
+        for ax in axes.flatten():
+            ax.xaxis.label.set_rotation(90)
+            ax.yaxis.label.set_rotation(0)
+            ax.yaxis.label.set_ha('right')
+
+        plt.tight_layout()
+        plt.gcf().subplots_adjust(wspace=0, hspace=0)
         plt.show()
 
 def main(argv):
