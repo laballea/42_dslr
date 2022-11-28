@@ -14,10 +14,6 @@ def load_data(path: str):
     return data
 
 
-def get_header(data):
-    head = [str(idx) for idx in range(len(data.columns) - 1)]
-    return head
-
 def get_description(data: pd.DataFrame):
     res = {}
     for idx, col_name in enumerate(data.columns[1:]):
@@ -36,11 +32,13 @@ def get_description(data: pd.DataFrame):
         ]
     return res
 
+
 def describe(data: pd.DataFrame):
     data = data.dropna()
     data = get_description(data)
     df = pd.DataFrame(data, index=["Count", "Mean", "Std", "Min", "25%", "50%", "75%", "Max", "Var"])
     print(df.iloc[:, 5:])
+
 
 def main(argv):
     try:
@@ -51,6 +49,7 @@ def main(argv):
     for opt, arg in opts:
         if opt in ["-f", "--file"]:
             describe(load_data(arg))
+
 
 if __name__ == "__main__":
     main(sys.argv[1:])
