@@ -16,14 +16,14 @@ def load_data(path: str):
             sys.exit(2)
     return data
 
-def histogram(data: pd.DataFrame):
+def scatterplot(data: pd.DataFrame):
     data = data.dropna()
     size = math.ceil(math.sqrt(len(data.columns[6:])))
-    fig, axs = plt.subplots(nrows=size, ncols=size, figsize=(16,8))
-    fig.tight_layout()
-    for idx, col_name in enumerate(data.columns[6:]):
-        usefull = data[["Hogwarts House", col_name]]
-        sns.histplot(data=usefull, x=col_name, hue="Hogwarts House", kde=True, multiple="stack", stat="density", ax=axs[idx % size][math.floor(idx / size)], legend=True if idx == 0 else False)
+    columns_name = ["Hogwarts House","Arithmancy","Astronomy","Herbology","Defense Against the Dark Arts","Divination","Muggle Studies","Ancient Runes",
+    "History of Magic","Transfiguration","Potions","Care of Magical Creatures","Charms","Flying"]
+    print([columns_name[0]] + columns_name[1:7])
+    sns.pairplot(data[[columns_name[0]] + columns_name[1:7]], hue="Hogwarts House")
+    sns.pairplot(data[[columns_name[0]] + columns_name[8:13]], hue="Hogwarts House")
     plt.show()
 
 def main(argv):
@@ -34,7 +34,7 @@ def main(argv):
         sys.exit(2)
     for opt, arg in opts:
         if opt in ["-f", "--file"]:
-            histogram(load_data(arg))
+            scatterplot(load_data(arg))
 
 
 if __name__ == "__main__":
