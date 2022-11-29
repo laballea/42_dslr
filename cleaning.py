@@ -1,5 +1,6 @@
 
-
+import pandas as pd
+import numpy as np
 from cmath import nan
 import getopt
 import sys
@@ -12,10 +13,8 @@ def load_data(path: str):
         except Exception as inst:
             print(inst)
             sys.exit(2)
-    # data.drop(['Index', 'Hogwarts House', 'First Name', 'Last Name', 'Birthday'], axis = 1, inplace = True)
     return data, data.columns
 
-import pandas as pd
 
 def main(argv):
     file = None
@@ -30,7 +29,17 @@ def main(argv):
         if opt in ["-f", "--file"]:
             file = arg
     data, _ = load_data(file)
-    data = cleaning(data, nb_nan_lim=1, verbose=True)
+    data = cleaning(data, nb_nan_lim=1, verbose=False)
+    print("compute Astronomy...", end='')
+    data["Astronomy"]=data.apply(lambda x : compute_astronomy(x), axis=1)
+    print("ok")
+
+def compute_astronomy(row):
+    """ compute the Astronomy Value with 'Defense Ag Dark Arts' Value"""
+    if str(row["Astronomy"]) == 'nan':
+        defense = row["Defense Against the Dark Arts"]
+        return ((defense * 100) * -1)
+    return row["Astronomy"]
 
 def cleaning(data, nb_nan_lim = 1, verbose = False):
     """ function to clean dataset
