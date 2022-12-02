@@ -1,6 +1,7 @@
 import numpy as np
 from tqdm import tqdm
 from utils.utils_ml import intercept_
+from utils.metrics import cross_entropy
 import sys
 
 class LogisticRegression():
@@ -67,12 +68,16 @@ class LogisticRegression():
         except Exception as inst:
             raise inst
 
-    def fit_(self, x: np.ndarray, y: np.ndarray):
+    def fit_(self, x: np.ndarray, y: np.ndarray, x_test: np.ndarray=None, y_test: np.ndarray=None, fct_metrics=cross_entropy):
         try:
-            historic = []
+            metrics_tr, metrics_cv = [], []
             for _ in tqdm(range(self.max_iter), leave=False):
                 grdt = self.gradient(x, y)
                 self.theta = self.theta - (grdt * self.alpha)
-            return historic
+                metrics_tr.append(fct_metrics(y, self.predict_(x)))
+                if x_test is not None and y_test is not None:
+                    metrics_cv.append(fct_metrics(y_test, self.predict_(x_test)))
+
+            return metrics_tr, metrics_cv
         except Exception as inst:
             raise inst

@@ -17,6 +17,7 @@ def load_data(path: str):
 def get_description(data: pd.DataFrame):
     res = {}
     for idx, col_name in enumerate(data.columns[1:]):
+        print( col_name)
         value = np.array(data[col_name])
         quartile = Statistician().quartile(value)
         res[idx] = [
