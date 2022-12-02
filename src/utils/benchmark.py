@@ -8,7 +8,7 @@ from data_spliter import data_spliter
 from polynomial_model import add_polynomial_features
 import numpy as np
 import matplotlib.pyplot as plt
-from cleaning import cleaning, compute_astronomy
+from cleaning import clean
 from Normalizer import Normalizer
 
 green = '\033[92m' # vert
@@ -78,7 +78,7 @@ def search_model(data, target_feature, graph=False, save=True):
     # y_test = np.array(y_test - np.min(y_test)) / (np.max(y_test) - np.min(y_test))
 
     hypo = [1 for _ in range(nb_features)]
-    thetas = [random.random() for _ in range(nb_features + 1)]
+    thetas = [1 for _ in range(nb_features + 1)]
     if target_feature in rules.keys():
         alpha = rules[target_feature]['alpha']
         iter = rules[target_feature]['iter']
@@ -94,8 +94,10 @@ def search_model(data, target_feature, graph=False, save=True):
     y_hat_normalise =  mylr.predict_(x_test_)
     y_hat = scaler_y.inverse(y_hat_normalise)
     mse = MyLR.mse_(y_test, mylr.predict_(x_test_))
-    
-    print(f"\tMSE = {green}{mse}{reset}")
+    mse_training = MyLR.mse_(y, mylr.predict_(x_))
+    print(f"\tMSE test = {green}{mse}{reset}")
+    print(f"\tMSE training = {green}{mse_training}{reset}")
+    # print(f"\tdiff = {blue}{mse_training - mse}{reset}")
 
     if save:
         # save model
@@ -116,17 +118,12 @@ def search_model(data, target_feature, graph=False, save=True):
         plt.show()
 
 def main_loop(target_feature, save=False, graph=False):
-    print(target_feature)
     try:
         # Importation of the dataset
         data = pd.read_csv("datasets/dataset_train.csv")
-        # remove of raw with Nan values > 1
-        data = cleaning(data, nb_nan_lim=1, verbose=True)
-
-        print("compute Astronomy...", end='')
-        data["Astronomy"]=data.apply(lambda x : compute_astronomy(x), axis=1)
-        print("ok")
-
+       
+        # remove of raw with Nan values > 2
+        data = clean(data, verbose=True)
         data = data.dropna()
     except:
         print("Issue when trying to retrieve the dataset.", file=sys.stderr)

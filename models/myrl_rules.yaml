@@ -1,9 +1,9 @@
 default:
   alpha: 0.1
-  iter: 1000
+  iter: 2000
 'Muggle Studies':
   alpha: 0.42
   iter: 1000
 'Care of Magical Creatures':
-  alpha: 0.01
+  alpha: 0.001
   iter: 4000
