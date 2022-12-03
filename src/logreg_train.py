@@ -2,24 +2,20 @@ import numpy as np
 import getopt, sys
 import pandas as pd
 import seaborn as sns
-from matplotlib import pyplot as plt
-from utils.logisticregression import LogisticRegression as LR
-from utils.normalizer import Normalizer
-from utils.metrics import accuracy_score_
 import itertools
 import yaml
 from tqdm import tqdm
-from utils.utils_ml import cross_validation, add_polynomial_features
 import math
+from matplotlib import pyplot as plt
 
-def load_data(path: str):
-    with open(path, "r") as stream:
-        try:
-            data = pd.read_csv(stream)
-        except Exception as inst:
-            print(inst)
-            sys.exit(2)
-    return data
+from utils.logisticregression import LogisticRegression as LR
+from utils.normalizer import Normalizer
+from utils.metrics import accuracy_score_
+from utils.cleaning import cleaner
+from utils.utils_ml import cross_validation, add_polynomial_features
+from utils.colors import colors
+from utils.common import load_data, load_yml_file, error
+
 
 def get_combs(rangePower: list, nb_param=1, full_comb=False):
     """
@@ -31,6 +27,7 @@ def get_combs(rangePower: list, nb_param=1, full_comb=False):
         return [np.full((nb_param, 1), po) for po in rangePower]
     else:
         return np.array(list(itertools.product(list(itertools.product(rangePower)), repeat=nb_param)))
+
 
 def reset(powerRange: list, lambdaRange: list, X:np.ndarray, Y:np.ndarray, dataPath:str):
     """
@@ -61,9 +58,12 @@ def reset(powerRange: list, lambdaRange: list, X:np.ndarray, Y:np.ndarray, dataP
                 "theta":[[1 for _ in range(sum(comb) + 1)] for _ in range(number_of_label)],
                 "total_it": 0
             }
+    
     with open("models.yml", 'w') as outfile:
         yaml.dump(models, outfile, default_flow_style=None)
+    print(f"{colors.green}Models successfuly initialize, saved in models.yml")
     return models
+
 
 def format_all(arr: np.ndarray):
     """
@@ -75,6 +75,7 @@ def format_all(arr: np.ndarray):
         result.append(row.idxmax())
     result = np.array(result).reshape(-1, 1)
     return result
+
 
 def format(arr: np.ndarray, label: int):
     """
@@ -88,6 +89,7 @@ def format(arr: np.ndarray, label: int):
     copy[:, 0][copy[:, 0] == -1] = 0
     return copy
 
+
 def one_vs_all(k_folds, alpha: float, max_iter: int, model: dict, nb_of_label: int):
     """
     k_folds => list of numpy array x_train, y_train, x_test, y_test
@@ -96,39 +98,52 @@ def one_vs_all(k_folds, alpha: float, max_iter: int, model: dict, nb_of_label: i
     nb_of_label => the number of labels to predict
     This function predict one label vs all of the other (binary classification)
     then "concat" all of this binary classification to create a nb_of_label classification
-    it returns list of thetas/weights after training, evolution of evaluation metrics on the training and cross valdiation set (cv)
-    and the accuracy score of the model
+    it returns list of thetas/weights after training, evolution of evaluation metrics on the training and cross validation set (cv)
+    and the accuracy score of the model (last metrics of cv set)
     """
-    x_train, y_train, x_test, y_test = normalize(k_folds)
-    y_hat_all = pd.DataFrame()
-    metrics_cv, metrics_tr = np.zeros((max_iter, )), np.zeros((max_iter, ))
-    res_theta = []
-    for label in range(nb_of_label):
-        binary_y_train, binary_y_test = format(y_train, label), format(y_test, label)
-        theta = np.array(model["theta"][label]).reshape(-1, 1)
+    x_train, y_train, x_test, y_test = normalize(k_folds) # normalize test and train sets
+    y_hat_all = pd.DataFrame() # dataframe to store prediction of each label
 
+    metrics_cv, metrics_tr = np.zeros((max_iter, )), np.zeros((max_iter, )) # save historic metrics of each label training, get the mean at the end
+    res_theta = [] # store finals theta for each binary classification
+
+    for label in range(nb_of_label):
+        # format y [house1, house2, house3 etc..] into "binarize" label: format(y, house1) => [1, 0, 0]
+        binary_y_train, binary_y_test = format(y_train, label), format(y_test, label) 
+        theta = np.array(model["theta"][label]).reshape(-1, 1) # get thetas from models
+
+        # create logistic regression
         my_lr = LR(theta, alpha=alpha, max_iter=max_iter, lambda_=float(model["lambda"]))
+        # fit return the metrics on training set and cross validation set, here the metrics is the accuracy
         tmp_metrics_tr, tmp_metrics_cv = my_lr.fit_(x_train, binary_y_train, x_test, binary_y_test, fct_metrics=accuracy_score_)
 
+        # add it to the save
         metrics_tr = np.add(metrics_tr, tmp_metrics_tr)
         metrics_cv = np.add(metrics_cv, tmp_metrics_cv)
 
+        # predict y_test depending on x_test, y_hat_one is binary prediction
         y_hat_one = my_lr.predict_(x_test)
+        # add it to y_hat_all
         y_hat_all[label] = y_hat_one.reshape(len(y_hat_one))
+        # add theta
         res_theta.append([float(tta) for tta in my_lr.theta])
 
+    # compute mean of metrics for each training on label
     metrics_cv, metrics_tr = metrics_cv / nb_of_label, metrics_tr / nb_of_label
-    return res_theta, metrics_cv, metrics_tr, float(metrics_cv[-1])#accuracy_score_(y_test, format_all(y_hat_all))
+    return res_theta, metrics_cv, metrics_tr, float(metrics_cv[-1])
+
 
 def normalize(k_folds: tuple):
     """
     get k_folds in argument (x_train, y_train, x_test, y_test)
-    and return x_train, y_train, x_test, y_test butnormalized and labelized if needed
+    and return x_train, y_train, x_test, y_test but normalized and labelized if needed
+    Normalize trains et and test set separately so model cannot have information of test set via normalization
     """
     x_train, y_train, x_test, y_test = k_folds
     x_train, y_train = Normalizer(x_train, norm="minmax").normalize().astype(float), Normalizer(y_train, norm="minmax").normalize().astype(float)
     x_test, y_test = Normalizer(x_test, norm="minmax").normalize().astype(float), Normalizer(y_test, norm="minmax").normalize().astype(float)
     return x_train, y_train, x_test, y_test
+
 
 def train_all(yml_file: dict, X:np.ndarray, Y:np.ndarray, alpha: float, max_iter: int):
     """
@@ -156,24 +171,27 @@ def train_all(yml_file: dict, X:np.ndarray, Y:np.ndarray, alpha: float, max_iter
             # add accuracy to get the mean of it
             model["accuracy"] = model["accuracy"] + accuracy
         
-
+        # compute mean of metrics and accuracy
         mean_metrics_cv, mean_metrics_tr = mean_metrics_cv / k, mean_metrics_tr / k
         model["accuracy"] = model["accuracy"] / k
 
+        # append to model previous metrics
         model["metrics_cv"] += mean_metrics_cv.tolist()
         model["metrics_tr"] += mean_metrics_tr.tolist()
         model["theta"] = theta
         model["total_it"] += max_iter
 
+    # find the model with the best accuracy
     accuracy_list = np.array([[str(key), model["accuracy"]] for key, model in yml_file["models"].items()])
     yml_file["data"]["best_model"] = str(accuracy_list[accuracy_list[:, 1].astype('float64').argmax()][0])
     with open("models.yml", 'w') as outfile:
         yaml.dump(yml_file, outfile, default_flow_style=None)
+    print(f"{colors.green}All models train, saved in models.yml")
 
 
 def display_all(yml_file: dict):
     size = math.ceil(math.sqrt(yml_file["data"]["number_of_models"]))
-    fig, axs = plt.subplots(nrows=size, ncols=size, figsize=(16,8))
+    fig, axs = plt.subplots(nrows=size, ncols=size, figsize=(16, 8))
     fig.tight_layout()
     idx = 0
     for model_name, model in yml_file["models"].items():
@@ -187,46 +205,61 @@ def display_all(yml_file: dict):
         idx += 1
     plt.show()
 
+
 def parse(data: pd.DataFrame):
-    data = data.dropna()  # remove nan from data
+    data = cleaner(data, verbose=False)  # replace nan from data
     X = Normalizer(data[["Astronomy", "Best Hand","Herbology","Defense Against the Dark Arts","Divination","Muggle Studies","Ancient Runes",
         "History of Magic","Transfiguration","Potions","Charms","Flying"]].to_numpy()).labelize()
     Y = data[["Hogwarts House"]]
     return X, Y
 
-def main(argv):
-    try:
-        opts, args = getopt.getopt(argv, "f:l:i:", ["file=", "reset", "train", "best", "display"])
-    except getopt.GetoptError as inst:
-        print(inst)
-        sys.exit(2)
-    data = None
-    with open("models.yml", "r") as stream:
-        try:
-            yml_file = yaml.safe_load(stream)
-        except yaml.YAMLError as exc:
-            print(exc)
-    learning_rate = 0.3
-    max_iter = 100
-    file_path = None
-    for opt, arg in opts:
-        if opt in ["-f", "--file"]:
-            data = load_data(arg)
-            file_path = arg
-        elif opt in ["-l"]:
-            learning_rate = float(arg)
-        elif opt in ["-i"]:
-            max_iter = int(arg)
 
-    if data is None or file_path is None:
-        raise ValueError("No data provided.")
-    X, Y = parse(data)
-    for opt, arg in opts:
-        if opt in ["--reset"]:
-            reset(range(1, 11), range(0, 1), X, Y, file_path)
-        elif opt in ["--train"]:
-            train_all(yml_file, X, Y, alpha=learning_rate, max_iter=max_iter)
-        elif opt in ["--display"]:
-            display_all(yml_file)
+def main(argv):
+    print(f"{colors.green}\
+        USAGE:\n\t\
+        python3 logreg_train.py [-f | --file] [path_to_dataset] [-l] [-i] [--train] [--display] [--reset]\n\t\
+        -l : float needed, learning rate of models.\n\t\
+        -i : int needed, maximum iteration.\n\t\
+        --train : will train all models.\n\t\
+        --display : display metrics curve of each models.\n\t\
+    ")
+
+    try:
+        opts, args = getopt.getopt(argv, "f:l:i:", ["file=", "reset", "train", "display"])
+    except getopt.GetoptError as inst:
+        error(inst)
+
+    data = None
+    yml_file = load_yml_file("models.yml")
+    learning_rate, max_iter = 0.3, 250
+    file_path = None
+
+    try:
+        for opt, arg in opts:
+            if opt in ["-f", "--file"]:
+                data = load_data(arg)
+                file_path = arg
+            elif opt in ["-l"]:
+                learning_rate = float(arg)
+            elif opt in ["-i"]:
+                max_iter = int(arg)
+    except Exception as inst:
+        error(inst)
+
+    if data is None:
+        error("No data file provided.")
+
+    try:
+        X, Y = parse(data)
+        for opt, arg in opts:
+            if opt in ["--reset"]:
+                reset(range(1, 11), range(0, 1), X, Y, file_path)
+            elif opt in ["--train"]:
+                train_all(yml_file, X, Y, alpha=learning_rate, max_iter=max_iter)
+            elif opt in ["--display"]:
+                display_all(yml_file)
+    except Exception as inst:
+        error(inst)
+
 if __name__ == "__main__":
     main(sys.argv[1:])

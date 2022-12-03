@@ -3,14 +3,21 @@ import numpy as np
 
 
 class Statistician():
-    def __init__(self):
-        pass
-
     def sum(self, x: np.ndarray):
         sum = 0
         for el in x:
             sum += el
         return sum
+
+    def count_nan(self, x: np.ndarray):
+        try:
+            count = 0
+            for el in x:
+                if math.isnan(el):
+                    count += 1
+            return count
+        except Exception:
+            return None
 
     def min(self, x: np.ndarray):
         try:

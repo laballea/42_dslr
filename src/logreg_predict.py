@@ -1,20 +1,16 @@
 import numpy as np
 import getopt, sys
 import pandas as pd
+import yaml
+
 from utils.logisticregression import LogisticRegression as LR
 from utils.normalizer import Normalizer
-import yaml
 from utils.utils_ml import add_polynomial_features
-import csv
+from utils.cleaning import cleaner
+from utils.metrics import accuracy_score_
+from utils.common import load_data, load_yml_file, error
+from utils.colors import colors
 
-def load_data(path: str):
-    with open(path, "r") as stream:
-        try:
-            data = pd.read_csv(stream)
-        except Exception as inst:
-            print(inst)
-            sys.exit(2)
-    return data
 
 def format_all(arr: np.ndarray):
     """
@@ -27,77 +23,111 @@ def format_all(arr: np.ndarray):
     result = np.array(result).reshape(-1, 1)
     return result
 
-def one_vs_all_predict(X, model: dict, nb_of_label: int):
-    y_hat_all = pd.DataFrame()
-    X_poly = add_polynomial_features(X, model["power_x"])
-    for label in range(nb_of_label):
-        theta = np.array(model["theta"][label]).reshape(-1, 1)
 
+def one_vs_all_predict(X: np.ndarray, model: dict, nb_of_label: int):
+    """
+    depending on X matrix, predict Y
+    """
+    y_hat_all = pd.DataFrame() # dataframe to store prediction of each label
+
+    X_poly = add_polynomial_features(X, model["power_x"]) # add polynome to X
+
+    # predict for each label
+    for label in range(nb_of_label):
+        theta = np.array(model["theta"][label]).reshape(-1, 1) # get thetas of saved best model
+
+        # create Logistic Regression class
         my_lr = LR(theta, lambda_=float(model["lambda"]))
 
+        # predict y_test depending on x_test, y_hat_one is binary prediction
         y_hat_one = my_lr.predict_(X_poly)
+        # add it to y_hat_all
         y_hat_all[label] = y_hat_one.reshape(len(y_hat_one))
 
     return format_all(y_hat_all)
 
-def normalize(k_folds: tuple):
-    """
-    get k_folds in argument (x_train, y_train, x_test, y_test)
-    and return x_train, y_train, x_test, y_test butnormalized and labelized if needed
-    """
-    x_train, y_train, x_test, y_test = k_folds
-    x_train, y_train = Normalizer(x_train, norm="minmax").normalize().astype(float), Normalizer(y_train, norm="minmax").normalize().astype(float)
-    x_test, y_test = Normalizer(x_test, norm="minmax").normalize().astype(float), Normalizer(y_test, norm="minmax").normalize().astype(float)
-    return x_train, y_train, x_test, y_test
-
 
 def predict(yml_file: dict, dataTest: pd.DataFrame, dataTrain: pd.DataFrame):
+    """
+    predict dataTest X values via the best model on yml_file, use dataTrain to normalize value of dataTest
+    """
+    # get best model
     model = yml_file["models"][yml_file["data"]["best_model"]]
+
+    # parse train and test set
     X_train, Y_train = parse(dataTrain)
+    X_test, Y_test = parse(dataTest)
+
+    # get the number of label that we can predict
     nb_of_label = len(np.unique(Y_train))
+
+    # create normalizer class
     normizer_X = Normalizer(X_train.to_numpy(), norm="minmax")
     normizer_Y = Normalizer(Y_train.to_numpy(), norm="minmax")
 
-    X_test_raw = dataTest[["Astronomy", "Best Hand","Herbology","Defense Against the Dark Arts","Divination","Muggle Studies","Ancient Runes",
-        "History of Magic","Transfiguration","Potions","Charms","Flying"]]
-    X_test_raw = X_test_raw.dropna()
+    # normalize and labelize x_test
+    X_test_n = normizer_X.normalize(X_test.to_numpy()).astype(float)
 
-    X_test_norm = normizer_X.normalize(X_test_raw.to_numpy()).astype(float)
-    y_hat = normizer_Y.denormalize(one_vs_all_predict(X_test_norm, model, nb_of_label=nb_of_label))
+    # predict y_test via x_test
+    y_hat = one_vs_all_predict(X_test_n, model, nb_of_label=nb_of_label)
+
+    # denormalize y_hat
+    y_hat = normizer_Y.denormalize(y_hat)
+
+    # create dict to match format requested on subject
     result = {
         "Index": range(len(y_hat)),
         "Hogwarts House":y_hat.reshape(len(y_hat),)
     }
-    pd.DataFrame(data=result).to_csv("house.csv", index=False)
+    # write prediction on csv format in house.csv
+    pd.DataFrame(data=result).to_csv("houses.csv", index=False)
+    print(f"{colors.green}File houses.csv successfuly create !")
+
 
 def parse(data: pd.DataFrame):
-    data = data.dropna()  # remove nan from data
+    """
+    replace all nan by a prediction or mean value via cleaner
+    return X and Y as Dataframe
+    """
+    data = cleaner(data, verbose=False)  # replace nan from data
     X = data[["Astronomy", "Best Hand","Herbology","Defense Against the Dark Arts","Divination","Muggle Studies","Ancient Runes",
         "History of Magic","Transfiguration","Potions","Charms","Flying"]]
     Y = data[["Hogwarts House"]]
     return X, Y
 
+
+def verify():
+    predict = Normalizer(load_data("houses.csv")[["Hogwarts House"]].to_numpy()).labelize()
+    truth = Normalizer(load_data("datasets/data_truth.csv")[["Hogwarts House"]].to_numpy()).labelize()
+    print(f"{colors.green}{accuracy_score_(predict, truth)}% accuracy")
+
+
 def main(argv):
+    print(f"{colors.green}USAGE:\n\tpython3 logreg_predict.py [-f | --file] [path_to_dataset] [-v | --verify]\n\t-v | --verify : verify prediction.")
     try:
-        opts, args = getopt.getopt(argv, "f:", ["file=", "predict", "display"])
+        opts, args = getopt.getopt(argv, "f:v", ["file=", "verify"])
     except getopt.GetoptError as inst:
-        print(inst)
-        sys.exit(2)
+        error(inst)
+
+
     data_test = None
-    with open("models.yml", "r") as stream:
-        try:
-            yml_file = yaml.safe_load(stream)
-        except yaml.YAMLError as exc:
-            print(exc)
+    yml_file = load_yml_file("models.yml")
     data_train = load_data(yml_file["data"]["data_train_path"])
+
     for opt, arg in opts:
         if opt in ["-f", "--file"]:
             data_test = load_data(arg)
 
     if data_test is None:
-        raise ValueError("No data provided.")
-    for opt, arg in opts:
-        if opt in ["--predict"]:
-            predict(yml_file, data_test, data_train)
+        error("No test file provided.")
+
+    try:
+        predict(yml_file, data_test, data_train)
+        for opt, arg in opts:
+            if opt in ["-v", "--verify"]:
+                verify()
+    except Exception as inst:
+        error(inst)
+
 if __name__ == "__main__":
     main(sys.argv[1:])

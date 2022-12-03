@@ -3,8 +3,8 @@ import sys
 import pandas as pd
 import numpy as np
 import yaml
-from Normalizer import Normalizer
-from mylinearregression import MyLinearRegression as MyLR
+from utils.Normalizer import Normalizer
+from utils.mylinearregression import MyLinearRegression as MyLR
 # from cleaning import clean
 
 green = '\033[92m' # vert
@@ -48,7 +48,7 @@ def predict_features(data, target_feature='All', verbose=False):
     data_return = data.copy()
     for li, line in enumerate(data.index):
         for idx,col in enumerate(data.columns):
-            if str(data[col][line]) == 'nan' and (target_feature == 'All' or col==target_feature):
+            if str(data[col][line]) == 'nan' and (target_feature == 'All' or col==target_feature) and col not in ['Hogwarts House']:
                 list_feature = []
                 for feat in tab_feature:
                     if feat not in ['Defense Against the Dark Arts', col]:

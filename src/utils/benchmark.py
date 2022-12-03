@@ -1,35 +1,32 @@
 import getopt
-import random
 import sys
 import pandas as pd
-from mylinearregression import MyLinearRegression as MyLR
 import yaml
-from data_spliter import data_spliter
-from polynomial_model import add_polynomial_features
 import numpy as np
 import matplotlib.pyplot as plt
-from cleaning import clean
-from Normalizer import Normalizer
 
-green = '\033[92m' # vert
-blue = '\033[94m' # blue
-yellow = '\033[93m' # jaune
-red = '\033[91m' # rouge
-reset = '\033[0m' #gris, couleur normale
+from cleaning import clean
+from data_spliter import data_spliter
+from polynomial_model import add_polynomial_features
+from Normalizer import Normalizer
+from mylinearregression import MyLinearRegression as MyLR
+from colors import colors
+
 
 def save_model(file, thetas, scaler_x, scaler_y):
 
-    print(f"Saving model '{yellow}{file}{reset}'... ", end='')
+    print(f"Saving model '{colors.yellow}{file}{colors.reset}'... ", end='')
     model = {}
     model['thetas'] = [float(theta) for theta in thetas]        
     model['mean_x'] = [float(x) for x in scaler_x.mean_]
     model['mean_y'] = float(scaler_y.mean_)
     model['std_x'] = [float(std) for std in scaler_x.std_]
     model['std_y'] = float(scaler_y.std_)
-    print(f"{green}Ok{reset}")
+    print(f"{colors.green}Ok{colors.reset}")
 
     with open(file, 'w') as outfile:
         yaml.dump(model, outfile, sort_keys=False, default_flow_style=None )
+
 
 def load_rules():
     #load models rules
@@ -43,11 +40,12 @@ def load_rules():
         print("Error no 'models/mylr_rules.yaml'.")
         sys.exit()
 
+
 def search_model(data, target_feature, graph=False, save=True):
     
     rules = load_rules()
     file = "models/"+target_feature.replace(" ", "_")+".yaml"
-    print(f"creation of  {green}{file}{reset}...")
+    print(f"creation of  {colors.green}{file}{colors.reset}...")
     target = data[target_feature].values.reshape(-1, 1)
     Xs = data.drop(target_feature, axis=1).to_numpy()
     nb_features = Xs.shape[1]
@@ -87,7 +85,7 @@ def search_model(data, target_feature, graph=False, save=True):
         iter = rules['default']['iter']
     x_ = add_polynomial_features(x, hypo)
     x_test_ = add_polynomial_features(x_test, hypo)
-    print(f"Regression with {yellow}alpha={reset}{blue}{alpha}{reset} and {yellow}max_iter={reset}{reset}{blue}{iter}{reset}")
+    print(f"Regression with {colors.yellow}alpha={colors.reset}{colors.blue}{alpha}{colors.reset} and {colors.yellow}max_iter={colors.reset}{colors.reset}{colors.blue}{iter}{colors.reset}")
     mylr = MyLR(thetas, alpha=alpha, max_iter=iter, progress_bar=True)
     
     mse_list = mylr.fit_(x_, y)
@@ -95,15 +93,15 @@ def search_model(data, target_feature, graph=False, save=True):
     y_hat = scaler_y.inverse(y_hat_normalise)
     mse = MyLR.mse_(y_test, mylr.predict_(x_test_))
     mse_training = MyLR.mse_(y, mylr.predict_(x_))
-    print(f"\tMSE test = {green}{mse}{reset}")
-    print(f"\tMSE training = {green}{mse_training}{reset}")
-    # print(f"\tdiff = {blue}{mse_training - mse}{reset}")
+    print(f"\tMSE test = {colors.green}{mse}{colors.reset}")
+    print(f"\tMSE training = {colors.green}{mse_training}{colors.reset}")
+    # print(f"\tdiff = {colors.blue}{mse_training - mse}{colors.reset}")
 
     if save:
         # save model
         save_model(file, mylr.thetas, scaler_x, scaler_y)
     else:
-        print(f"Model for {yellow}{target_feature}{reset}... {red}Not saved{reset}")
+        print(f"Model for {colors.yellow}{target_feature}{colors.reset}... {colors.red}Not saved{colors.reset}")
 
     if graph:
         plt.figure()
@@ -116,6 +114,7 @@ def search_model(data, target_feature, graph=False, save=True):
         plt.plot(np.arange(mylr.max_iter), mse_list)
         plt.title(f"Feature : {target_feature} - MSE={mse:0.2e}")
         plt.show()
+
 
 def main_loop(target_feature, save=False, graph=False):
     try:
@@ -137,10 +136,11 @@ def main_loop(target_feature, save=False, graph=False):
         if target_feature in data.columns:
             search_model(data, target_feature, graph=graph, save=save)
         else:
-            print(f"Error : {red}{target_feature}{reset} is not a valid feature.")
+            print(f"Error : {colors.red}{target_feature}{colors.reset} is not a valid feature.")
             print("Available columns : ")
             for feat in data.columns:
-                print(f"\t{green}{feat}{reset}")
+                print(f"\t{colors.green}{feat}{colors.reset}")
+
 
 def main(argv):
     try:
