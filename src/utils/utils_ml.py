@@ -1,7 +1,8 @@
 import numpy as np
+import math
 
 
-def data_spliter(x, y, proportion):
+def data_spliter(x: np.ndarray, y: np.ndarray, proportion: float=0.8):
     """
     split data into a train set and a test set, respecting to the given proportion
     return (x_train, x_test, y_train, y_test)
@@ -19,8 +20,24 @@ def data_spliter(x, y, proportion):
     sample = int(proportion*N)
     np.random.shuffle(arr)
     x_train, x_test, y_train, y_test = np.array(X[:sample, :]), np.array(X[sample:, :]), np.array(Y[:sample, ]).reshape(-1, 1), np.array(Y[sample:, ]).reshape(-1, 1)
-    return (x_train, x_test, y_train, y_test)
+    return (x_train, y_train, x_test, y_test)
 
+
+def batch(x: np.ndarray, y: np.ndarray, m: int=32):
+    """
+    divide array x and y in, many sub array of size m
+    """
+    try:
+        arr = np.concatenate((x, y), axis=1)
+        N = len(y)
+        np.random.shuffle(arr)
+        X = arr[:, :x.shape[1]]
+        Y = arr[:, x.shape[1]].reshape(len(y), 1)
+        batch_x = np.array_split(X, math.ceil(N / m), axis=0)
+        batch_y = np.array_split(Y, math.ceil(N / m), axis=0)
+        return batch_x, batch_y
+    except Exception as inst:
+        raise inst
 
 def cross_validation(x, y, K):
     """

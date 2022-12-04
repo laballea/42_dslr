@@ -7,12 +7,13 @@ import yaml
 from tqdm import tqdm
 import math
 from matplotlib import pyplot as plt
+import time
 
 from utils.logisticregression import LogisticRegression as LR
 from utils.normalizer import Normalizer
 from utils.metrics import accuracy_score_
 from utils.cleaning import cleaner
-from utils.utils_ml import cross_validation, add_polynomial_features
+from utils.utils_ml import cross_validation, add_polynomial_features, data_spliter
 from utils.colors import colors
 from utils.common import load_data, load_yml_file, error
 
@@ -29,7 +30,7 @@ def get_combs(rangePower: list, nb_param=1, full_comb=False):
         return np.array(list(itertools.product(list(itertools.product(rangePower)), repeat=nb_param)))
 
 
-def reset(powerRange: list, lambdaRange: list, X:np.ndarray, Y:np.ndarray, dataPath:str):
+def reset(powerRange: list, lambdaRange: list, X:np.ndarray, Y:np.ndarray, dataPath:str, gradient: str):
     """
     reset the yml file, all data is lost
     get in parameter powerRange, the range of power to handle
@@ -54,6 +55,7 @@ def reset(powerRange: list, lambdaRange: list, X:np.ndarray, Y:np.ndarray, dataP
                 "name":model_name,
                 "metrics_cv": [],
                 "metrics_tr": [],
+                "gradient":gradient,
                 "accuracy":0,
                 "theta":[[1 for _ in range(sum(comb) + 1)] for _ in range(number_of_label)],
                 "total_it": 0
@@ -113,7 +115,7 @@ def one_vs_all(k_folds, alpha: float, max_iter: int, model: dict, nb_of_label: i
         theta = np.array(model["theta"][label]).reshape(-1, 1) # get thetas from models
 
         # create logistic regression
-        my_lr = LR(theta, alpha=alpha, max_iter=max_iter, lambda_=float(model["lambda"]))
+        my_lr = LR(theta, alpha=alpha, max_iter=max_iter, lambda_=float(model["lambda"]), gradient=model["gradient"])
         # fit return the metrics on training set and cross validation set, here the metrics is the accuracy
         tmp_metrics_tr, tmp_metrics_cv = my_lr.fit_(x_train, binary_y_train, x_test, binary_y_test, fct_metrics=accuracy_score_)
 
@@ -205,6 +207,35 @@ def display_all(yml_file: dict):
         idx += 1
     plt.show()
 
+def test_gradient(X:np.ndarray, Y:np.ndarray, alpha: float, max_iter: int):
+    nb_of_label = len(np.unique(Y))  # get number of label to predict
+    model = {
+            "power_x":[1 for _ in range(X.shape[1])],
+            "lambda":0,
+            "name":"test_gradient",
+            "metrics_cv": [],
+            "metrics_tr": [],
+            "gradient":"batch",
+            "accuracy":0,
+            "theta":[[1 for _ in range(X.shape[1] + 1)] for _ in range(nb_of_label)],
+            "total_it": 0
+    }
+    gradients = {
+        "batch":[],
+        "mini_batch":[],
+        "stohastic":[],
+        "it":range(max_iter)
+    }
+    k_folds = data_spliter(X, Y, 0.9)
+    for gradient in ["batch", "mini_batch", "stohastic"]:
+        model["gradient"] = gradient
+        start_time = time.time()
+        theta, metrics_cv, metrics_tr, accuracy = one_vs_all(k_folds, alpha, max_iter, model, nb_of_label)
+        print(f"{colors.green}model with {gradient} gradient compute in: {time.time() - start_time}s")
+        gradients[gradient] = metrics_tr
+    plt.figure()
+    sns.lineplot(x='it', y='value', hue='variable', data=pd.melt(pd.DataFrame(gradients), ['it']))
+    plt.show()
 
 def parse(data: pd.DataFrame):
     data = cleaner(data, verbose=False)  # replace nan from data
@@ -217,21 +248,24 @@ def parse(data: pd.DataFrame):
 def main(argv):
     print(f"{colors.green}\
         USAGE:\n\t\
-        python3 logreg_train.py [-f | --file] [path_to_dataset] [-l] [-i] [--train] [--display] [--reset]\n\t\
+        python3 logreg_train.py [-f | --file] [path_to_dataset] [-l] [-i] [-g] [--train] [--display] [--reset]\n\t\
         -l : float needed, learning rate of models.\n\t\
         -i : int needed, maximum iteration.\n\t\
         --train : will train all models.\n\t\
         --display : display metrics curve of each models.\n\t\
+        --gradient : test different gradient method.\n\t\
+        -g : set gradient method on reset [batch, mini_batch, stohastic].\n\t\
     ")
 
     try:
-        opts, args = getopt.getopt(argv, "f:l:i:", ["file=", "reset", "train", "display"])
+        opts, args = getopt.getopt(argv, "f:l:i:g:", ["file=", "reset", "train", "display", "gradient"])
     except getopt.GetoptError as inst:
         error(inst)
 
     data = None
     yml_file = load_yml_file("models.yml")
     learning_rate, max_iter = 0.3, 250
+    gradient = "batch"
     file_path = None
 
     try:
@@ -243,6 +277,8 @@ def main(argv):
                 learning_rate = float(arg)
             elif opt in ["-i"]:
                 max_iter = int(arg)
+            elif opt in ["-g"]:
+                gradient = str(arg)
     except Exception as inst:
         error(inst)
 
@@ -253,13 +289,16 @@ def main(argv):
         X, Y = parse(data)
         for opt, arg in opts:
             if opt in ["--reset"]:
-                reset(range(1, 11), range(0, 1), X, Y, file_path)
+                reset(range(1, 11), range(0, 1), X, Y, file_path, gradient)
             elif opt in ["--train"]:
                 train_all(yml_file, X, Y, alpha=learning_rate, max_iter=max_iter)
             elif opt in ["--display"]:
                 display_all(yml_file)
+            elif opt in ["--gradient"]:
+                test_gradient(X, Y, alpha=learning_rate, max_iter=max_iter)
     except Exception as inst:
-        error(inst)
+        raise inst
+        # error(inst)
 
 if __name__ == "__main__":
     main(sys.argv[1:])
