@@ -1,7 +1,8 @@
 import math
 import warnings
 import numpy as np
-from ft_progress import ft_progress
+# from ft_progress import ft_progress
+import tqdm
 
 class MyLinearRegressionException(Exception):
     def __init__(self, *args: object):
@@ -122,11 +123,11 @@ class MyLinearRegression():
             return 
         try:
             with warnings.catch_warnings():
-                list = range(self.max_iter)
-                if self.progress_bar:
-                    list = ft_progress(list)
+                # list = range(self.max_iter)
+                # if self.progress_bar:
+                #     list = ft_progress(list)
                 list_mse = []
-                for _ in list:
+                for _ in tqdm(list):
                     gradien = self.gradien_(x, y)
                     self.thetas = self.thetas - (self.alpha * gradien)
                     mse = MyLinearRegression.mse_(y, self.predict_(x))

@@ -3,7 +3,7 @@ import numpy as np
 from cmath import nan
 import getopt
 import sys
-from predict_features import predict_features
+from utils.predict_features import predict_features
 
 green = '\033[92m' # vert
 blue = '\033[94m' # blue
@@ -83,7 +83,7 @@ def clean(data, nb_nan_lim = 2, verbose = False):
     for line in data.index: 
         nb_nan = 0
         for col in data.columns:
-            if str(data[col][line]) == 'nan':
+            if str(data[col][line]) == 'nan' and col in tab_feature:
                 nb_nan += 1
         if nb_nan > nb_nan_lim:
             to_del.append(int(data['Index'][line]))

@@ -1,20 +1,11 @@
-import numpy as np
-from utils.statistician import Statistician
 import getopt, sys
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 import math
-import matplotlib.lines as mlines
 
-def load_data(path: str):
-    with open(path, "r") as stream:
-        try:
-            data = pd.read_csv(stream)
-        except Exception as inst:
-            print(inst)
-            sys.exit(2)
-    return data
+from utils.common import load_data, error
+
 
 def histogram(data: pd.DataFrame):
     data = data.dropna()
@@ -26,15 +17,18 @@ def histogram(data: pd.DataFrame):
         sns.histplot(data=usefull, x=col_name, hue="Hogwarts House", kde=True, multiple="stack", stat="density", ax=axs[idx % size][math.floor(idx / size)], legend=True if idx == 0 else False)
     plt.show()
 
+
 def main(argv):
     try:
         opts, args = getopt.getopt(argv, "f:", ["file="])
     except getopt.GetoptError as inst:
-        print(inst)
-        sys.exit(2)
-    for opt, arg in opts:
-        if opt in ["-f", "--file"]:
-            histogram(load_data(arg))
+        error(inst)
+    try:
+        for opt, arg in opts:
+            if opt in ["-f", "--file"]:
+                histogram(load_data(arg))
+    except Exception as inst:
+        error(inst)
 
 
 if __name__ == "__main__":
