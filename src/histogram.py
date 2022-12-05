@@ -15,6 +15,7 @@ def histogram(data: pd.DataFrame):
     for idx, col_name in enumerate(data.columns[6:]):
         usefull = data[["Hogwarts House", col_name]]
         sns.histplot(data=usefull, x=col_name, hue="Hogwarts House", kde=True, multiple="stack", stat="density", ax=axs[idx % size][math.floor(idx / size)], legend=True if idx == 0 else False)
+    plt.subplots_adjust(left=0.06, bottom=0.07, right=0.98, top=0.99, wspace=0.29, hspace=0.3)
     plt.show()
 
 
