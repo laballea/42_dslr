@@ -11,13 +11,13 @@ class Normalizer():
             self.std_ = None
         
     def norme(self, X):
-        # try:
-        X_tr = np.copy(X)
-        X_tr -= self.mean_
-        X_tr /= self.std_
-        return X_tr
-        # except Exception:
-        #     return 0
+        try:
+            X_tr = np.copy(X)
+            X_tr -= self.mean_
+            X_tr /= self.std_
+            return X_tr
+        except Exception:
+            return 0
 
     def inverse(self, X_tr):
         try:

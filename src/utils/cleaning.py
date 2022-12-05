@@ -4,12 +4,7 @@ from cmath import nan
 import getopt
 import sys
 from utils.predict_features import predict_features
-
-green = '\033[92m' # vert
-blue = '\033[94m' # blue
-yellow = '\033[93m' # jaune
-red = '\033[91m' # rouge
-reset = '\033[0m' #gris, couleur normale
+from utils.colors import colors
 
 def load_data(path: str):
     """ load .csv file with path and return Dataframe of the dataset and header of the dataset droped by inused columns"""
@@ -131,8 +126,8 @@ def main(argv):
     before = data.isnull().sum().sum()
     data = cleaner(data, verbose=verbose)
     if verbose:
-        print(f"\n     \tBefore the cleaner's functions there wase {red}{before}{reset} 'Nan' Values *****")
-        print(f"\n*****\tAfter the cleaner's functions there is {green}{data.isnull().sum().sum()}{reset} 'Nan' Value")
+        print(f"\n     \tBefore the cleaner's functions there wase {colors.red}{before}{colors.reset} 'Nan' Values *****")
+        print(f"\n*****\tAfter the cleaner's functions there is {colors.green}{data.isnull().sum().sum()}{colors.reset} 'Nan' Value")
 
 if __name__ == "__main__":
     print("cleaning programme...")

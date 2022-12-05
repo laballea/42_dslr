@@ -5,13 +5,7 @@ import numpy as np
 import yaml
 from utils.Normalizer import Normalizer
 from utils.mylinearregression import MyLinearRegression as MyLR
-# from cleaning import clean
-
-green = '\033[92m' # vert
-blue = '\033[94m' # blue
-yellow = '\033[93m' # jaune
-red = '\033[91m' # rouge
-reset = '\033[0m' #gris, couleur normale
+from utils.colors import colors
 
 tab_feature = ['Arithmancy', 'Astronomy', 'Herbology', 'Defense Against the Dark Arts', 'Divination', 'Muggle Studies', 'Ancient Runes',
    'History of Magic', 'Transfiguration', 'Potions', 'Care of Magical Creatures', 'Charms', 'Flying']
@@ -29,19 +23,11 @@ def load_yaml(feature):
 
 def predict_features(data, target_feature='All', verbose=False):
 
-    # try:
-    #     # Importation of the dataset
-    #     data = pd.read_csv("datasets/dataset_train.csv")
-    #     data = cleaning(data)
-    # except:
-    #     print("Issue when trying to retrieve the dataset.", file=sys.stderr)
-    #     sys.exit()
-
     if target_feature != 'All' and target_feature not in tab_feature:
-        print(f"Error : {red}{target_feature}{reset} is not a valid feature.")
+        print(f"Error : {colors.red}{target_feature}{colors.reset} is not a valid feature.")
         print("Available columns : ")
         for feat in tab_feature:
-            print(f"\t{green}{feat}{reset}")    
+            print(f"\t{colors.green}{feat}{colors.reset}")    
         return
 
     nb_predict = 0
@@ -55,14 +41,14 @@ def predict_features(data, target_feature='All', verbose=False):
                         list_feature.append(feat)
                 Xs = data[list_feature].values
                 if verbose:
-                    print(f"for #{yellow}{data['Index'][line]}{reset} {green}{data['First Name'][line]} {data['Last Name'][line]}{reset}: {blue}{col}{reset}[{idx}] to predict ... ", end='')
+                    print(f"for #{colors.yellow}{data['Index'][line]}{colors.reset} {colors.green}{data['First Name'][line]} {data['Last Name'][line]}{colors.reset}: {colors.blue}{col}{colors.reset}[{idx}] to predict ... ", end='')
                 model = load_yaml(col)
                 scaler_x = Normalizer()
                 scaler_y = Normalizer()
                 theta = (0.0, 0.0)
                 if model is None:
                     if verbose:
-                        print(f"{red}No training model.{reset}")
+                        print(f"{colors.red}No training model.{colors.reset}")
                     break
                 else:
                     scaler_x.mean_ = np.array(model['mean_x'])
@@ -80,8 +66,7 @@ def predict_features(data, target_feature='All', verbose=False):
                     nb_predict += 1
                     break
     if verbose:
-        print(f"There have been {green}{nb_predict}{reset} update predictions.")
-        # clean(data_return, nb_nan_lim=2, verbose=True)
+        print(f"There have been {colors.green}{nb_predict}{colors.reset} update predictions.")
     return data_return
                 
 
