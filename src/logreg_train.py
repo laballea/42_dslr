@@ -55,6 +55,7 @@ def reset(powerRange: list, lambdaRange: list, X:np.ndarray, Y:np.ndarray, dataP
                 "metrics_cv": [],
                 "metrics_tr": [],
                 "gradient":gradient,
+                "optimizer":"basic",
                 "accuracy":0,
                 "theta":[[1 for _ in range(sum(comb) + 1)] for _ in range(number_of_label)],
                 "total_it": 0
