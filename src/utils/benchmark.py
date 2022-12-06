@@ -10,7 +10,7 @@ from data_spliter import data_spliter
 from polynomial_model import add_polynomial_features
 from Normalizer import Normalizer
 from mylinearregression import MyLinearRegression as MyLR
-from colors import colors
+from common import colors
 
 
 def save_model(file, thetas, scaler_x, scaler_y):

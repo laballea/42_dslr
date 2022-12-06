@@ -12,6 +12,10 @@ class Normalizer():
                 "norm":self.minmax,
                 "unnorm":self.unminmax
             },
+            "zscore":{
+                "norm":self.minmax,
+                "unnorm":self.unminmax
+            },
         }
         if norm not in self.supported_norm:
             raise ValueError(f"{norm} not supported")
@@ -88,6 +92,24 @@ class Normalizer():
         try:
             result = to_norm.copy()
             return np.array((result * (max(ref) - min(ref)) + min(ref)))
+        except Exception as inst:
+            raise inst
+
+    def zscore(self, to_norm: np.ndarray=None, ref: np.ndarray=None):
+        try:
+            result = np.copy(to_norm)
+            result -= np.mean(ref)
+            result /= np.std(ref)
+            return result
+        except Exception as inst:
+            raise inst
+
+    def unzscore(self, to_norm: np.ndarray=None, ref: np.ndarray=None):
+        try:
+            result = np.copy(to_norm)
+            result *= np.std(ref)
+            result += np.mean(ref)
+            return result
         except Exception as inst:
             raise inst
 

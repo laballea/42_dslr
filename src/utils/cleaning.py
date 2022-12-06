@@ -1,10 +1,11 @@
 import pandas as pd
 import numpy as np
-from cmath import nan
 import getopt
 import sys
+
 from utils.predict_features import predict_features
-from utils.colors import colors
+from utils.common import colors
+
 
 def load_data(path: str):
     """ load .csv file with path and return Dataframe of the dataset and header of the dataset droped by inused columns"""
@@ -15,6 +16,7 @@ def load_data(path: str):
             print(inst)
             sys.exit(2)
     return data, data.columns
+
 
 def mean_(x: np.ndarray):
         """
@@ -29,6 +31,7 @@ def mean_(x: np.ndarray):
                 sum += i
         return sum / len(x)
 
+
 def compute_astronomy(row):
     """ compute the Astronomy Value with 'Defense Ag Dark Arts' Value"""
     if str(row["Astronomy"]) == 'nan':
@@ -36,12 +39,14 @@ def compute_astronomy(row):
         return ((defense * 100) * -1)
     return row["Astronomy"]
 
+
 def compute_defense(row):
     """ compute the Defense Against the Dark Arts Value with 'Astronomy' Value"""
     if str(row["Defense Against the Dark Arts"]) == 'nan':
         astronomy = row["Astronomy"]
         return ((astronomy / 100) * -1)
     return row["Defense Against the Dark Arts"]
+
 
 def clean(data, nb_nan_lim = 2, verbose = False):
     """ function to clean dataset
@@ -103,8 +108,10 @@ def clean(data, nb_nan_lim = 2, verbose = False):
     # mean if 
     return update_data
 
+
 def cleaner(data, verbose=False):
     return (predict_features(clean(data=data, verbose=verbose), target_feature='All', verbose=verbose))
+
 
 def main(argv):
     file = None
@@ -128,6 +135,7 @@ def main(argv):
     if verbose:
         print(f"\n     \tBefore the cleaner's functions there wase {colors.red}{before}{colors.reset} 'Nan' Values *****")
         print(f"\n*****\tAfter the cleaner's functions there is {colors.green}{data.isnull().sum().sum()}{colors.reset} 'Nan' Value")
+
 
 if __name__ == "__main__":
     print("cleaning programme...")

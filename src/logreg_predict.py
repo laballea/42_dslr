@@ -1,21 +1,19 @@
 import numpy as np
 import getopt, sys
 import pandas as pd
-import yaml
 
 from utils.logisticregression import LogisticRegression as LR
 from utils.normalizer import Normalizer
 from utils.utils_ml import add_polynomial_features
 from utils.cleaning import cleaner
 from utils.metrics import accuracy_score_
-from utils.common import load_data, load_yml_file, error
-from utils.colors import colors
+from utils.common import load_data, load_yml_file, error, colors
 
 
 def format_all(arr: np.ndarray):
     """
-    get an array of dimension (M, number of label) in argument representing probability of each label
-    return an array of dimension (M, 1), where the best probability is choosen
+    get an array of dimension (m, number of label) in argument representing probability of each label
+    return an array of dimension (m, 1), where the best probability is choosen
     """
     result = []
     for index, row in arr.iterrows():

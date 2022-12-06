@@ -14,8 +14,7 @@ from utils.normalizer import Normalizer
 from utils.metrics import accuracy_score_
 from utils.cleaning import cleaner
 from utils.utils_ml import cross_validation, add_polynomial_features, data_spliter
-from utils.colors import colors
-from utils.common import load_data, load_yml_file, error
+from utils.common import load_data, load_yml_file, error, colors
 
 
 def get_combs(rangePower: list, nb_param=1, full_comb=False):
@@ -115,7 +114,7 @@ def one_vs_all(k_folds, alpha: float, max_iter: int, model: dict, nb_of_label: i
         theta = np.array(model["theta"][label]).reshape(-1, 1) # get thetas from models
 
         # create logistic regression
-        my_lr = LR(theta, alpha=alpha, max_iter=max_iter, lambda_=float(model["lambda"]), gradient=model["gradient"])
+        my_lr = LR(theta, alpha=alpha, max_iter=max_iter, lambda_=float(model["lambda"]), gradient=model["gradient"], optimizer=model["optimizer"])
         # fit return the metrics on training set and cross validation set, here the metrics is the accuracy
         tmp_metrics_tr, tmp_metrics_cv = my_lr.fit_(x_train, binary_y_train, x_test, binary_y_test, fct_metrics=accuracy_score_)
 
@@ -207,6 +206,7 @@ def display_all(yml_file: dict):
         idx += 1
     plt.show()
 
+
 def test_gradient(X:np.ndarray, Y:np.ndarray, alpha: float, max_iter: int):
     nb_of_label = len(np.unique(Y))  # get number of label to predict
     model = {
@@ -216,28 +216,37 @@ def test_gradient(X:np.ndarray, Y:np.ndarray, alpha: float, max_iter: int):
             "metrics_cv": [],
             "metrics_tr": [],
             "gradient":"batch",
+            "optimizer":"basic",
             "accuracy":0,
             "theta":[[1 for _ in range(X.shape[1] + 1)] for _ in range(nb_of_label)],
             "total_it": 0
     }
     gradients = {
-        "batch":[],
-        "mini_batch":[],
-        "stohastic":[],
         "it":range(max_iter)
     }
     k_folds = data_spliter(X, Y, 0.9)
     for gradient in ["batch", "mini_batch", "stohastic"]:
-        model["gradient"] = gradient
-        start_time = time.time()
-        theta, metrics_cv, metrics_tr, accuracy = one_vs_all(k_folds, alpha, max_iter, model, nb_of_label)
-        print(f"{colors.green}model with {gradient} gradient compute in: {time.time() - start_time}s")
-        gradients[gradient] = metrics_tr
-    plt.figure()
-    sns.lineplot(x='it', y='value', hue='variable', data=pd.melt(pd.DataFrame(gradients), ['it']))
+        time_ = []
+        for opt in ["basic", "adam"]:
+            model["gradient"] = gradient
+            model["optimizer"] = opt
+            start_time = time.time()
+            theta, metrics_cv, metrics_tr, accuracy = one_vs_all(k_folds, alpha, max_iter, model, nb_of_label)
+            time_.append(f"{gradient}_{opt} {(time.time() - start_time):.3f}s")
+            print(f"{colors.green}model with {gradient}_{opt} compute in: {(time.time() - start_time):.2f}s")
+            gradients[f"{gradient}_{opt}"] = metrics_tr
+        plt.figure()
+        sns.lineplot(x='it', y='value', hue='variable', data=pd.melt(pd.DataFrame(gradients), ['it'])).set(title=time_)
+        gradients = {
+            "it":range(max_iter)
+        }
     plt.show()
 
+
 def parse(data: pd.DataFrame):
+    """
+    clean data dans return X, Y
+    """
     data = cleaner(data, verbose=False)  # replace nan from data
     X = Normalizer(data[["Astronomy", "Best Hand","Herbology","Defense Against the Dark Arts","Divination","Muggle Studies","Ancient Runes",
         "History of Magic","Transfiguration","Potions","Charms","Flying"]].to_numpy()).labelize()
@@ -299,6 +308,7 @@ def main(argv):
     except Exception as inst:
         raise inst
         # error(inst)
+
 
 if __name__ == "__main__":
     main(sys.argv[1:])

@@ -25,7 +25,7 @@ def data_spliter(x: np.ndarray, y: np.ndarray, proportion: float=0.8):
 
 def batch(x: np.ndarray, y: np.ndarray, m: int=32):
     """
-    divide array x and y in, many sub array of size m
+    divide array x and y in many sub array of size m
     """
     try:
         arr = np.concatenate((x, y), axis=1)

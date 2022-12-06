@@ -1,14 +1,14 @@
-import getopt
-import sys
-import pandas as pd
 import numpy as np
 import yaml
+
 from utils.Normalizer import Normalizer
 from utils.mylinearregression import MyLinearRegression as MyLR
-from utils.colors import colors
+from utils.common import colors
+
 
 tab_feature = ['Arithmancy', 'Astronomy', 'Herbology', 'Defense Against the Dark Arts', 'Divination', 'Muggle Studies', 'Ancient Runes',
    'History of Magic', 'Transfiguration', 'Potions', 'Care of Magical Creatures', 'Charms', 'Flying']
+
 
 def load_yaml(feature):
     file = "models/"+feature.replace(" ", "_")+".yaml"
@@ -18,7 +18,6 @@ def load_yaml(feature):
             return model
     except IOError:
         return None
-
 
 
 def predict_features(data, target_feature='All', verbose=False):
@@ -45,7 +44,6 @@ def predict_features(data, target_feature='All', verbose=False):
                 model = load_yaml(col)
                 scaler_x = Normalizer()
                 scaler_y = Normalizer()
-                theta = (0.0, 0.0)
                 if model is None:
                     if verbose:
                         print(f"{colors.red}No training model.{colors.reset}")
