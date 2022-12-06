@@ -5,12 +5,12 @@ import yaml
 import numpy as np
 import matplotlib.pyplot as plt
 
-from cleaning import clean
-from data_spliter import data_spliter
-from polynomial_model import add_polynomial_features
-from Normalizer import Normalizer
-from mylinearregression import MyLinearRegression as MyLR
-from common import colors
+from utils.cleaning import clean
+from utils.utils_ml import data_spliter
+from utils.polynomial_model import add_polynomial_features
+from utils.normalizer import Normalizer
+from utils.mylinearregression import MyLinearRegression as MyLR
+from utils.common import colors
 
 
 def save_model(file, thetas, scaler_x, scaler_y):
@@ -50,30 +50,21 @@ def search_model(data, target_feature, graph=False, save=True):
     Xs = data.drop(target_feature, axis=1).to_numpy()
     nb_features = Xs.shape[1]
     # split dataset
-    x_train, x_test, y_train, y_test = data_spliter(Xs, target.reshape(-1,1), 0.8)
+    x_train, y_train, x_test, y_test = data_spliter(Xs, target.reshape(-1,1), 0.8)
 
     x_test_to_plot = x_test
     y_test_to_plot = y_test
 
     #normalisation
 
-    scaler_x = Normalizer(x_train)
-    scaler_y = Normalizer(y_train)
+    scaler_x = Normalizer(x_train, norm='zscore')
+    scaler_y = Normalizer(y_train, norm='zscore')
 
     #zscore
-    x = scaler_x.norme(x_train)
-    y = scaler_y.norme(y_train)
-    #minmax
-    # x = np.array(x_train - np.min(x_train)) / (np.max(x_train) - np.min(x_train))
-    # y = np.array(y_train - np.min(y_train)) / (np.max(y_train) - np.min(y_train))
-
-    #Zscore
-    x_test = scaler_x.norme(x_test)
-    y_test = scaler_y.norme(y_test)
-
-    #minmax
-    # x_test = np.array(x_test - np.min(x_test)) / (np.max(x_test) - np.min(x_test))
-    # y_test = np.array(y_test - np.min(y_test)) / (np.max(y_test) - np.min(y_test))
+    x = scaler_x.zscore(x_train)
+    y = scaler_y.zscore(y_train)
+    x_test = scaler_x.zscore(x_test)
+    y_test = scaler_y.zscore(y_test)
 
     hypo = [1 for _ in range(nb_features)]
     thetas = [1 for _ in range(nb_features + 1)]
@@ -90,7 +81,7 @@ def search_model(data, target_feature, graph=False, save=True):
     
     mse_list = mylr.fit_(x_, y)
     y_hat_normalise =  mylr.predict_(x_test_)
-    y_hat = scaler_y.inverse(y_hat_normalise)
+    y_hat = scaler_y.unzscore(y_hat_normalise)
     mse = MyLR.mse_(y_test, mylr.predict_(x_test_))
     mse_training = MyLR.mse_(y, mylr.predict_(x_))
     print(f"\tMSE test = {colors.green}{mse}{colors.reset}")

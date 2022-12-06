@@ -13,18 +13,25 @@ class Normalizer():
                 "unnorm":self.unminmax
             },
             "zscore":{
-                "norm":self.minmax,
-                "unnorm":self.unminmax
+                "norm":self.zscore,
+                "unnorm":self.unzscore
             },
         }
         if norm not in self.supported_norm:
             raise ValueError(f"{norm} not supported")
-        if X is None:
+        if norm == 'zscore' and X is not None:
+            self.mean_ = np.mean(X, axis=0)
+            self.std_ = np.std(X, axis=0) 
+        elif norm == 'zscore' and X is None:
+            self.mean_ = None
+            self.std_ = None
+        elif X is None:
             raise ValueError(f"{norm} not supported")
         self.X = X
         self.norm_fct = self.supported_norm[norm]["norm"]
         self.unnorm_fct = self.supported_norm[norm]["unnorm"]
-        self.info_col = self.get_info()
+        if X is not None:
+            self.info_col = self.get_info()
 
     def get_info(self):
         try:
@@ -98,8 +105,8 @@ class Normalizer():
     def zscore(self, to_norm: np.ndarray=None, ref: np.ndarray=None):
         try:
             result = np.copy(to_norm)
-            result -= np.mean(ref)
-            result /= np.std(ref)
+            result -= self.mean_
+            result /= self.std_
             return result
         except Exception as inst:
             raise inst
@@ -107,8 +114,8 @@ class Normalizer():
     def unzscore(self, to_norm: np.ndarray=None, ref: np.ndarray=None):
         try:
             result = np.copy(to_norm)
-            result *= np.std(ref)
-            result += np.mean(ref)
+            result *= self.std_
+            result += self.mean_
             return result
         except Exception as inst:
             raise inst

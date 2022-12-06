@@ -1,21 +1,5 @@
-import pandas as pd
 import numpy as np
-import getopt
-import sys
-
 from utils.predict_features import predict_features
-from utils.common import colors
-
-
-def load_data(path: str):
-    """ load .csv file with path and return Dataframe of the dataset and header of the dataset droped by inused columns"""
-    with open(path, "r") as stream:
-        try:
-            data = pd.read_csv(stream)
-        except Exception as inst:
-            print(inst)
-            sys.exit(2)
-    return data, data.columns
 
 
 def mean_(x: np.ndarray):
@@ -111,33 +95,3 @@ def clean(data, nb_nan_lim = 2, verbose = False):
 
 def cleaner(data, verbose=False):
     return (predict_features(clean(data=data, verbose=verbose), target_feature='All', verbose=verbose))
-
-
-def main(argv):
-    file = None
-    try:
-        opts, _ = getopt.getopt(argv, "f:v", ["file=", "verbose"])
-    except getopt.GetoptError as inst:
-        print(inst)
-        sys.exit(2)
-    verbose = False
-    for opt, arg in opts:
-        if opt in ["-v", "--verbose"]:
-            verbose = True
-        if opt in ["-f", "--file"]:
-            file = arg
-    if file is None:
-        print(f"USAGE:\n\t$>python3 cleaning.pyp -f DATASET.csv [-v]\n\t-v : verbose mode.")
-        return
-    data, _ = load_data(file)
-    before = data.isnull().sum().sum()
-    data = cleaner(data, verbose=verbose)
-    if verbose:
-        print(f"\n     \tBefore the cleaner's functions there wase {colors.red}{before}{colors.reset} 'Nan' Values *****")
-        print(f"\n*****\tAfter the cleaner's functions there is {colors.green}{data.isnull().sum().sum()}{colors.reset} 'Nan' Value")
-
-
-if __name__ == "__main__":
-    print("cleaning programme...")
-    main(sys.argv[1:])
-    print("Good bye.")
