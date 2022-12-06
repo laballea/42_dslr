@@ -95,8 +95,8 @@ def parse(data: pd.DataFrame):
 
 
 def verify():
-    predict = Normalizer(load_data("houses.csv")[["Hogwarts House"]].to_numpy()).labelize()
-    truth = Normalizer(load_data("datasets/data_truth.csv")[["Hogwarts House"]].to_numpy()).labelize()
+    predict = Normalizer(load_data("houses.csv", type_data='houses')[["Hogwarts House"]].to_numpy()).labelize()
+    truth = Normalizer(load_data("datasets/data_truth.csv", type_data='houses')[["Hogwarts House"]].to_numpy()).labelize()
     print(f"{colors.green}{accuracy_score_(predict, truth)}% accuracy")
 
 
@@ -110,11 +110,11 @@ def main(argv):
 
     data_test = None
     yml_file = load_yml_file("models.yml")
-    data_train = load_data(yml_file["data"]["data_train_path"])
+    data_train = load_data(yml_file["data"]["data_train_path"], type_data='train')
 
     for opt, arg in opts:
         if opt in ["-f", "--file"]:
-            data_test = load_data(arg)
+            data_test = load_data(arg, type_data='test')
 
     if data_test is None:
         error("No test file provided.")

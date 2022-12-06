@@ -14,19 +14,40 @@ class colors:
     red = '\033[91m' # rouge
     reset = '\033[0m' #gris, couleur normales
 
-
 def error(msg: str="", exit: int=2, color: str=colors.red):
     print(f"{color}{msg}")
     sys.exit(exit)
 
+def dataset_control(data: pd.DataFrame, type_data):
+    """ Control dataset integrity"""
+    good_columns = ['Index', 'Hogwarts House', 'First Name', 'Last Name', 'Birthday',
+       'Best Hand', 'Arithmancy', 'Astronomy', 'Herbology',
+       'Defense Against the Dark Arts', 'Divination', 'Muggle Studies',
+       'Ancient Runes', 'History of Magic', 'Transfiguration', 'Potions',
+       'Care of Magical Creatures', 'Charms', 'Flying']
+    nb_columns = 19
+    if type_data in ['train', 'test']:
+        if len(data.columns) != nb_columns:
+            error("Bad dataset's file: the number of columns is wrong.")
+        for col in data.columns:
+            if col not in good_columns:
+               error("Bad dataset's file: Bad name in a column.")
+    if type_data == 'train':
+        # Hogwarts House columns must be not empty
+        if data['Hogwarts House'].isnull().sum() != 0:
+            error("Bad dataset's file: The Hogwarts House column has got empty value")
+    elif type_data == 'test':
+        if data['Hogwarts House'].isnull().sum() != len(data):
+            error("Bad dataset's file: The Hogwarts House column must be empty.")
+    return data
 
-def load_data(path: str):
+def load_data(path: str, type_data):
     try:
         with open(path, "r") as stream:
             data = pd.read_csv(stream)
     except Exception as inst:
         error(inst)
-    return data
+    return dataset_control(data, type_data)
 
 
 def load_yml_file(path: str):

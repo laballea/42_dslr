@@ -281,7 +281,7 @@ def main(argv):
     try:
         for opt, arg in opts:
             if opt in ["-f", "--file"]:
-                data = load_data(arg)
+                data = load_data(arg, type_data='train')
                 file_path = arg
             elif opt in ["-l"]:
                 learning_rate = float(arg)
