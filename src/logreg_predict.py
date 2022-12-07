@@ -1,6 +1,7 @@
 import numpy as np
 import getopt, sys
 import pandas as pd
+import matplotlib.pyplot as plt
 
 from utils.logisticregression import LogisticRegression as LR
 from utils.normalizer import Normalizer
@@ -8,6 +9,7 @@ from utils.utils_ml import add_polynomial_features
 from utils.cleaning import cleaner
 from utils.metrics import accuracy_score_
 from utils.common import load_data, load_yml_file, error, colors
+from utils.confusion_matrix import confusion_matrix_
 
 
 def format_all(arr: np.ndarray):
@@ -98,7 +100,16 @@ def verify():
     predict = Normalizer(load_data("houses.csv", type_data='houses')[["Hogwarts House"]].to_numpy()).labelize()
     truth = Normalizer(load_data("datasets/data_truth.csv", type_data='houses')[["Hogwarts House"]].to_numpy()).labelize()
     print(f"{colors.green}{accuracy_score_(predict, truth)}% accuracy")
-
+    conf_matrix = confusion_matrix_(truth, predict, df_option=False)
+    _, ax = plt.subplots(figsize=(5, 5))
+    ax.matshow(conf_matrix, cmap=plt.cm.Blues, alpha=0.3)
+    for i in range(conf_matrix.shape[0]):
+        for j in range(conf_matrix.shape[1]):
+            ax.text(x=j, y=i, s=conf_matrix[i, j], va='center', ha='center', size='12')
+    plt.xlabel('Predictions', fontsize=12)
+    plt.ylabel('True values', fontsize=12)
+    plt.title('Confusion Matrix', fontsize=12)
+    plt.show()
 
 def main(argv):
     print(f"{colors.green}USAGE:\n\tpython3 logreg_predict.py [-f | --file] [path_to_dataset] [-v | --verify]\n\t-v | --verify : verify prediction.")
