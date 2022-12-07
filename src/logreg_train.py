@@ -203,8 +203,9 @@ def display_all(yml_file: dict):
             "metrics_tr":model["metrics_tr"]
         }
         data = pd.DataFrame(dict_)
-        sns.lineplot(x='iteration', y='value', hue='variable', data=pd.melt(data, ['iteration']), ax=axs[idx % size][math.floor(idx / size)], legend=True if idx == 0 else False).set(title=model_name)
+        sns.lineplot(x='iteration', y='value', hue='variable', data=pd.melt(data, ['iteration']), ax=axs[idx % size][math.floor(idx / size)], legend=True if idx == 0 else False).set(title=model_name, ylabel="accuracy")
         idx += 1
+    plt.tight_layout()
     plt.show()
 
 
@@ -273,7 +274,6 @@ def main(argv):
         error(inst)
 
     data = None
-    yml_file = load_yml_file("models.yml")
     learning_rate, max_iter = 0.3, 250
     gradient = "batch"
     file_path = None
@@ -301,8 +301,10 @@ def main(argv):
             if opt in ["--reset"]:
                 reset(range(1, 11), range(0, 1), X, Y, file_path, gradient)
             elif opt in ["--train"]:
+                yml_file = load_yml_file("models.yml")
                 train_all(yml_file, X, Y, alpha=learning_rate, max_iter=max_iter)
             elif opt in ["--display"]:
+                yml_file = load_yml_file("models.yml")
                 display_all(yml_file)
             elif opt in ["--gradient"]:
                 test_gradient(X, Y, alpha=learning_rate, max_iter=max_iter)

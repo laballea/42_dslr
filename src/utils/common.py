@@ -47,7 +47,7 @@ def dataset_control(data: pd.DataFrame, type_data):
             error("Bad dataset's file: Numeric column has got non numeric value.")
     return data
 
-def load_data(path: str, type_data):
+def load_data(path: str, type_data="train"):
     try:
         with open(path, "r") as stream:
             data = pd.read_csv(stream)
