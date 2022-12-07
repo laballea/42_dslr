@@ -118,7 +118,7 @@ def main_loop(target_feature, save=False, graph=False):
     except:
         print("Issue when trying to retrieve the dataset.", file=sys.stderr)
         sys.exit()
-    data.drop(['Index', 'Hogwarts House', 'First Name', 'Last Name', 'Birthday', 'Best Hand', 'Defense Against the Dark Arts'], axis=1, inplace=True)
+    data.drop(['Index', 'Hogwarts House', 'First Name', 'Last Name', 'Birthday', 'Best Hand',], axis=1, inplace=True)
     
     if target_feature == 'All':
         for target_feature in data.columns:
